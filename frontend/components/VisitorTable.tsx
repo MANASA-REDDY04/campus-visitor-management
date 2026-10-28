@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Visit } from '@/types/visitor';
 import { StatusBadge } from './StatusBadge';
 import { approveVisit, rejectVisit } from '@/lib/api';
-import { Eye, CheckCircle, XCircle, X, User, Phone, Mail, Building2, Calendar, Clock } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, X, User, Phone, Mail, Building2, Calendar, Clock, Share2 } from 'lucide-react';
+import { SharePassModal } from './SharePassModal';
 
 interface VisitorTableProps {
   visits: Visit[];
@@ -14,6 +15,7 @@ interface VisitorTableProps {
 
 export function VisitorTable({ visits, onStatusChange, showActions = true }: VisitorTableProps) {
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
+  const [shareVisit, setShareVisit] = useState<Visit | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
 
@@ -114,6 +116,13 @@ export function VisitorTable({ visits, onStatusChange, showActions = true }: Vis
                 >
                   <Eye className="w-3.5 h-3.5" /> Details
                 </button>
+                <button
+                  onClick={() => setShareVisit(visit)}
+                  className="px-2.5 py-1.5 text-xs text-green-700 bg-green-50 hover:bg-green-100 rounded-lg flex items-center gap-1 transition-colors border border-green-200"
+                  title="Share pass with visitor"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Share
+                </button>
                 {showActions && visit.status === 'PENDING' && (
                   <>
                     <button
@@ -185,6 +194,13 @@ export function VisitorTable({ visits, onStatusChange, showActions = true }: Vis
                         title="View details"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setShareVisit(visit)}
+                        className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                        title="Share pass with visitor"
+                      >
+                        <Share2 className="w-4 h-4" />
                       </button>
                       {visit.status === 'PENDING' && (
                         <>
@@ -283,6 +299,15 @@ export function VisitorTable({ visits, onStatusChange, showActions = true }: Vis
                 <p className="text-sm font-mono font-semibold text-blue-700">{selectedVisit.pass_id}</p>
               </div>
 
+              {/* Share Pass Action inside Modal */}
+              <button
+                onClick={() => setShareVisit(selectedVisit)}
+                className="w-full py-2.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-xs"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share Pass with Visitor (WhatsApp / Link)</span>
+              </button>
+
               {selectedVisit.check_in_time && (
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">Checked In:</span>{' '}
@@ -317,6 +342,15 @@ export function VisitorTable({ visits, onStatusChange, showActions = true }: Vis
             )}
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {shareVisit && (
+        <SharePassModal
+          visit={shareVisit}
+          isOpen={!!shareVisit}
+          onClose={() => setShareVisit(null)}
+        />
       )}
     </>
   );

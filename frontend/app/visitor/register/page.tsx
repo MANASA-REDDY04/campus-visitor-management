@@ -7,10 +7,11 @@ import { registerVisit } from '@/lib/api';
 import { RegistrationFormData, VisitorType } from '@/types/visitor';
 import {
   User, Phone, Mail, Building2, Calendar, Clock, FileText,
-  ChevronLeft, CheckCircle, AlertCircle, Loader2
+  ChevronLeft, CheckCircle, AlertCircle, Loader2, Share2, Copy, Check, MessageCircle
 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { NavbarUser } from '@/components/NavbarUser';
+import { formatWhatsAppPhone } from '@/components/SharePassModal';
 
 const DEPARTMENTS = [
   'Computer Science',
@@ -59,9 +60,17 @@ export default function RegisterPage() {
   const [form, setForm] = useState<RegistrationFormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<RegistrationFormData>>({});
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [success, setSuccess] = useState<{
     visitId: string;
     passId: string;
+    full_name: string;
+    phone: string;
+    email?: string;
+    department: string;
+    person_to_visit: string;
+    visit_date: string;
+    arrival_time: string;
   } | null>(null);
   const [apiError, setApiError] = useState('');
 
@@ -96,7 +105,17 @@ export default function RegisterPage() {
     setApiError('');
     try {
       const result = await registerVisit(form);
-      setSuccess({ visitId: result.visit_id, passId: result.pass_id });
+      setSuccess({
+        visitId: result.visit_id,
+        passId: result.pass_id,
+        full_name: form.full_name,
+        phone: form.phone,
+        email: form.email,
+        department: form.department,
+        person_to_visit: form.person_to_visit,
+        visit_date: form.visit_date,
+        arrival_time: form.arrival_time,
+      });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }; message?: string };
       setApiError(
@@ -108,42 +127,99 @@ export default function RegisterPage() {
   };
 
   if (success) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://campus-visitor-management.vercel.app';
+    const passUrl = `${origin}/visitor/pass/${success.passId}`;
+    const cleanPhone = formatWhatsAppPhone(success.phone);
+    const waMessage = `🎓 *CBIT Campus Visitor Pass*\n\n` +
+      `Hello *${success.full_name}*,\n` +
+      `Your campus visitor pass request for CBIT has been submitted (pending admin approval).\n\n` +
+      `📋 *Pass ID:* ${success.passId}\n` +
+      `👤 *Visiting:* ${success.person_to_visit} (${success.department})\n` +
+      `📅 *Date:* ${success.visit_date} at ${success.arrival_time}\n\n` +
+      `🔗 *Track & View Digital Pass:*\n${passUrl}\n\n` +
+      `📍 *Chaitanya Bharathi Institute of Technology (CBIT)*, Gandipet, Hyderabad.`;
+
+    const waUrl = cleanPhone
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(waMessage)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(waMessage)}`;
+
+    const handleCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(passUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch {
+        setCopied(false);
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8 max-w-md w-full text-center border border-gray-100">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
-          <p className="text-gray-500 mb-6">
-            Your visit request has been submitted successfully and is pending approval.
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Pass Created!</h2>
+          <p className="text-gray-500 text-xs sm:text-sm mb-5">
+            Visit request for <span className="font-semibold text-gray-800">{success.full_name}</span> has been submitted.
           </p>
 
-          <div className="bg-blue-50 rounded-2xl p-4 mb-6 text-left space-y-2">
+          {/* Pass ID Card */}
+          <div className="bg-blue-50/70 border border-blue-200/60 rounded-2xl p-3.5 mb-5 text-left flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-500">Visit ID</p>
-              <p className="font-mono font-semibold text-gray-800 text-sm">{success.visitId}</p>
+              <p className="text-[11px] text-gray-500 font-medium">Digital Pass ID</p>
+              <p className="font-mono font-bold text-blue-700 text-base">{success.passId}</p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500">Pass ID (save this!)</p>
-              <p className="font-mono font-bold text-blue-700">{success.passId}</p>
-            </div>
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full border border-amber-200">
+              Pending Approval
+            </span>
           </div>
 
-          <p className="text-sm text-gray-500 mb-8">
-            Once approved, you can view your digital pass using the Pass ID above.
-          </p>
+          {/* Share with Visitor Card */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/80 rounded-2xl p-4 mb-5 text-left space-y-3">
+            <div className="flex items-center gap-1.5">
+              <Share2 className="w-4 h-4 text-green-700" />
+              <span className="text-xs font-bold text-green-900 uppercase tracking-wide">
+                Share Pass With Visitor
+              </span>
+            </div>
+            <p className="text-xs text-green-800">
+              Send the pass link directly to <span className="font-semibold">{success.full_name}</span> so they can track approval and show their QR pass.
+            </p>
 
-          <div className="space-y-3">
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm shadow-green-600/20 transition-all"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>Send via WhatsApp ({success.phone})</span>
+            </a>
+
+            <button
+              onClick={handleCopy}
+              className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                copied
+                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'bg-white border-green-200 text-green-800 hover:bg-green-100/50'
+              }`}
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5 text-green-700" />}
+              <span>{copied ? 'Pass Link Copied!' : 'Copy Pass Link'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-2">
             <button
               onClick={() => router.push(`/visitor/pass/${success.passId}`)}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors shadow-xs"
             >
-              View My Pass
+              View Digital Pass
             </button>
             <button
               onClick={() => { setSuccess(null); setForm(EMPTY_FORM); }}
-              className="w-full py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              className="w-full py-2.5 border border-gray-200 text-gray-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Register Another Visit
             </button>
