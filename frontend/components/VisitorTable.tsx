@@ -78,71 +78,83 @@ export function VisitorTable({ visits, onStatusChange, showActions = true }: Vis
         {visits.map((visit) => (
           <div
             key={visit.id}
-            className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <h3 className="font-bold text-gray-900 text-base">{visit.visitor?.full_name}</h3>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-gray-900 text-base leading-snug truncate">{visit.visitor?.full_name}</h3>
                 <p className="text-xs text-gray-500 capitalize">{visit.visitor?.visitor_type?.toLowerCase()} visitor</p>
               </div>
-              <StatusBadge status={visit.status} />
+              <div className="flex-shrink-0">
+                <StatusBadge status={visit.status} />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 rounded-xl p-3 my-3">
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase">Visiting</span>
-                <span className="font-medium text-gray-900">{visit.person_to_visit}</span>
+              <div className="min-w-0">
+                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Visiting</span>
+                <span className="font-medium text-gray-900 truncate block">{visit.person_to_visit}</span>
               </div>
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase">Department</span>
-                <span className="font-medium text-gray-900">{visit.department}</span>
+              <div className="min-w-0">
+                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Department</span>
+                <span className="font-medium text-gray-900 truncate block">{visit.department}</span>
               </div>
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase">Phone</span>
-                <span>{visit.visitor?.phone}</span>
+              <div className="min-w-0">
+                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Phone</span>
+                <span className="truncate block">{visit.visitor?.phone || '—'}</span>
               </div>
-              <div>
-                <span className="text-gray-400 block text-[10px] uppercase">Date & Time</span>
-                <span>{formatDate(visit.visit_date)} • {visit.arrival_time}</span>
+              <div className="min-w-0">
+                <span className="text-gray-400 block text-[10px] uppercase font-semibold">Date & Time</span>
+                <span className="truncate block">{formatDate(visit.visit_date)} • {visit.arrival_time}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
-              <span className="font-mono text-xs text-blue-600 font-semibold">{visit.pass_id}</span>
-              <div className="flex items-center gap-1.5">
+            {/* Card Footer: Pass ID + Details/Share actions */}
+            <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-gray-100">
+              <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 truncate">
+                {visit.pass_id}
+              </span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
                   onClick={() => setSelectedVisit(visit)}
-                  className="px-2.5 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg flex items-center gap-1 transition-colors"
+                  title="View full details"
                 >
-                  <Eye className="w-3.5 h-3.5" /> Details
+                  <Eye className="w-3.5 h-3.5 text-gray-500" />
+                  <span>Details</span>
                 </button>
                 <button
                   onClick={() => setShareVisit(visit)}
-                  className="px-2.5 py-1.5 text-xs text-green-700 bg-green-50 hover:bg-green-100 rounded-lg flex items-center gap-1 transition-colors border border-green-200"
+                  className="px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 rounded-lg flex items-center gap-1 transition-colors border border-emerald-200/80"
                   title="Share pass with visitor"
                 >
-                  <Share2 className="w-3.5 h-3.5" /> Share
+                  <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Share</span>
                 </button>
-                {showActions && visit.status === 'PENDING' && (
-                  <>
-                    <button
-                      onClick={() => handleApprove(visit.id)}
-                      disabled={loadingId === visit.id}
-                      className="px-2.5 py-1.5 text-xs text-white bg-green-600 hover:bg-green-700 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" /> Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(visit.id)}
-                      disabled={loadingId === visit.id}
-                      className="px-2.5 py-1.5 text-xs text-white bg-red-500 hover:bg-red-600 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50"
-                    >
-                      <XCircle className="w-3.5 h-3.5" /> Reject
-                    </button>
-                  </>
-                )}
               </div>
             </div>
+
+            {/* Dedicated Full-Width Action Row for Pending Requests (Prevents overflow on mobile) */}
+            {showActions && visit.status === 'PENDING' && (
+              <div className="grid grid-cols-2 gap-2 pt-2.5 mt-2.5 border-t border-gray-100">
+                <button
+                  onClick={() => handleApprove(visit.id)}
+                  disabled={loadingId === visit.id}
+                  className="w-full py-2.5 px-3 text-xs font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{loadingId === visit.id ? 'Approving...' : 'Approve'}</span>
+                </button>
+                <button
+                  onClick={() => handleReject(visit.id)}
+                  disabled={loadingId === visit.id}
+                  className="w-full py-2.5 px-3 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>{loadingId === visit.id ? 'Rejecting...' : 'Reject'}</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
