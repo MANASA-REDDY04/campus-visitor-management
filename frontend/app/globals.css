@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* QR Scanner: sweeping scan-line animation */
+@keyframes scan-line {
+  0%   { top: 8px; opacity: 1; }
+  50%  { top: calc(100% - 8px); opacity: 1; }
+  100% { top: 8px; opacity: 1; }
+}
+
+@theme {
+  --animate-scan-line: scan-line 2s ease-in-out infinite;
+}
+
+.animate-scan-line {
+  animation: var(--animate-scan-line);
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;

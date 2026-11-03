@@ -183,7 +183,8 @@ export default function SecurityDashboard() {
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-900">Verify Visitor Pass</h2>
               <p className="text-gray-500 text-sm mt-1">
-                Enter the visitor&apos;s pass ID to verify and check them in.
+                <span className="hidden md:inline">Enter the visitor&apos;s pass ID to verify and check them in.</span>
+                <span className="md:hidden">Scan the visitor&apos;s QR code or enter their Pass ID to verify and check them in.</span>
               </p>
             </div>
             <QRScanner onCheckIn={handleRefresh} />
